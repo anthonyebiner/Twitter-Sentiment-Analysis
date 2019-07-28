@@ -1,7 +1,8 @@
-tracker = ['trump']
+candidate1 = 'Trump'
+candidate2 = ''
 
 interval = 0.25
-seconds = 60
+seconds = 120
 
-average1 = 250
-average2 = 750
+average1 = 500
+average2 = 1250

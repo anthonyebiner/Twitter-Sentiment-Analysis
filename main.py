@@ -1,16 +1,21 @@
 import tweepy
 import matplotlib.pyplot as plt
+import matplotlib.widgets as widgets
 import numpy as np
 import json
 import statistics
 import time
 import threading
+import sys
+import keyboard
+import datetime
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from textblob import TextBlob
 from tweetDefs import *
 from auths import *
 from config import *
 
+tracker = [candidate1, candidate2]
 analyzer = SentimentIntensityAnalyzer()
 x_len = round(seconds * 1/interval)
 X = np.arange(0, seconds, interval)
@@ -24,12 +29,24 @@ average = [0] * average2
 startTime = time.time()
 error = 0
 
+csv = open(candidate1 + 'Data.csv', "w")
+columnTitleRow = "candidate, sentiment, location, user\n"
+csv.write(columnTitleRow)
+
+
+def close_looping():
+    csv.close()
+    sys.exit(0)
+
 
 def graph_tweets():
-    print('running time function')
     global positive, negative, neutral, Y_range, startTime, error
 
     while True:
+        if keyboard.is_pressed('c'):
+            csv.close()
+            sys.exit(0)
+
         if time.time() - startTime + error >= interval:
             error += time.time() - startTime - interval
             startTime = time.time()
@@ -52,19 +69,18 @@ def graph_tweets():
             plt.plot(X, Y2, color='red')
 
             plt.show()
-            plt.pause(0.00000001)
-            print(negative, neutral, positive)
+            plt.pause(0.000001)
+            # print(negative, neutral, positive)
 
 
 def log_tweet(dict_data):
     global positive, negative, neutral, count, Y_range
 
-    # user = dict_data["user"]["screen_name"]
-    # location = get_location(dict_data)
+    user = dict_data["user"]["screen_name"]
+    location = get_location(dict_data)
     tweet = get_tweet(dict_data)
 
     vSentiment = analyzer.polarity_scores(tweet)["compound"]
-    # tSentiment = TextBlob(tweet).sentiment.polarity
 
     if vSentiment > 0.05:
         average.append(1)
@@ -83,7 +99,11 @@ def log_tweet(dict_data):
     # print('***************************************')
     # print(str(tweet))
     # print('Vader: ' + str(vSentiment))
-    # print('TextBlob: ' + str(tSentiment))
+
+    print(negative, '|', neutral, '|', positive)
+
+    row = str(candidate1) + ', ' + str(vSentiment) + ', ' + str(location) + ', ' + str(user) + ', ' + str(datetime.datetime.now().time()) + '\n'
+    csv.write(row)
 
 
 class MyStreamListener(tweepy.StreamListener):
@@ -107,12 +127,11 @@ def start_logger():
     myStreamListener = MyStreamListener()
     myStream = tweepy.Stream(auth=auth, listener=myStreamListener)
 
-    myStream.filter(track=tracker)
+    myStream.filter(track=tracker, languages=['en'])
 
 
 if __name__ == '__main__':
     x = threading.Thread(target=start_logger, args=())
     x.daemon = True
     x.start()
-
     graph_tweets()

@@ -28,6 +28,6 @@ def get_location(dict_data):
 
 def get_tweet(dict_data):
     if dict_data["truncated"]:
-        return clean_tweet(dict_data["extended_tweet"]["full_text"])
+        return dict_data["extended_tweet"]["full_text"]
     else:
-        return clean_tweet(dict_data["text"])
+        return dict_data["text"]
