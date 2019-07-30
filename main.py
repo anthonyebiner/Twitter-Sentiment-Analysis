@@ -1,6 +1,6 @@
 import tweepy
 import matplotlib.pyplot as plt
-import matplotlib.widgets as widgets
+from matplotlib import animation
 import numpy as np
 import json
 import statistics
@@ -21,8 +21,6 @@ x_len = round(seconds * 1/interval)
 X = np.arange(0, seconds, interval)
 Y1 = [0] * x_len
 Y2 = [0] * x_len
-plt.ion()
-graph = plt.plot(X, Y1)[0]
 Y_range = 1
 positive, negative, neutral, count = 0, 0, 0, 0
 average = [0] * average2
@@ -32,6 +30,17 @@ error = 0
 csv = open(candidate1 + 'Data.csv', "w")
 columnTitleRow = "candidate, sentiment, location, user\n"
 csv.write(columnTitleRow)
+
+plt.style.use('seaborn')
+plt.ion()
+fig = plt.figure()
+ax = plt.axes(xlim=(0, seconds), ylim=(-Y_range, Y_range))
+line1, = ax.plot([], [], lw=2)
+line2, = ax.plot([], [], lw=2)
+
+plt.ylabel('Sentiment')
+plt.xlabel('Seconds')
+plt.title('Tracking: ' + str(candidate1))
 
 
 def close_looping():
@@ -55,22 +64,11 @@ def graph_tweets():
             Y2.append(statistics.mean(average[-average2:]))
             del Y2[0]
 
-            plt.clf()
-
-            plt.ylabel('Sentiment')
-            plt.xlabel('Seconds')
-            plt.title('Tracking: ' + str(tracker))
-
-            plt.ylim(-Y_range, Y_range)
-            plt.xlim(0, seconds)
-
-            plt.axhline(y=0, color='black', linestyle='-', linewidth='0.25')
-            plt.plot(X, Y1, color='black')
-            plt.plot(X, Y2, color='red')
+            line1.set_data(X, Y1)
+            line2.set_data(X, Y2)
 
             plt.show()
             plt.pause(0.000001)
-            # print(negative, neutral, positive)
 
 
 def log_tweet(dict_data):
@@ -102,8 +100,9 @@ def log_tweet(dict_data):
 
     print(negative, '|', neutral, '|', positive)
 
-    row = str(candidate1) + ', ' + str(vSentiment) + ', ' + str(location) + ', ' + str(user) + ', ' + str(datetime.datetime.now().time()) + '\n'
-    csv.write(row)
+    if location is not None:
+        row = str(candidate1) + ', ' + str(vSentiment) + ', ' + str(location) + ', ' + str(user) + ', ' + str(datetime.datetime.now().time()) + '\n'
+        csv.write(row)
 
 
 class MyStreamListener(tweepy.StreamListener):
