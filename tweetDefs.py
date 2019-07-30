@@ -27,7 +27,13 @@ def get_location(dict_data):
 
 
 def get_tweet(dict_data):
-    if dict_data["truncated"]:
-        return dict_data["extended_tweet"]["full_text"]
+    if 'retweeted_status' in dict_data:
+        if dict_data['retweeted_status']['truncated']:
+            return clean_tweet(dict_data['retweeted_status']["extended_tweet"]["full_text"])
+        else:
+            return clean_tweet(dict_data['retweeted_status']["text"])
     else:
-        return dict_data["text"]
+        if dict_data['truncated']:
+            return clean_tweet(dict_data["extended_tweet"]["full_text"])
+        else:
+            return clean_tweet(dict_data["text"])

@@ -17,29 +17,28 @@ from config import *
 
 tracker = [candidate1, candidate2]
 analyzer = SentimentIntensityAnalyzer()
-x_len = round(seconds * 1/interval)
-X = np.arange(0, seconds, interval)
-Y1 = [0] * x_len
-Y2 = [0] * x_len
+x_len = round(minutes * 60 * 1 / interval)
+X = np.arange(minutes, 0, -interval / 60)
+Y1 = [None] * x_len
+Y2 = [None] * x_len
 Y_range = 1
 positive, negative, neutral, count = 0, 0, 0, 0
-average = [0] * average2
+sentiments = [0]
 startTime = time.time()
 error = 0
 
 csv = open(candidate1 + 'Data.csv', "w")
-columnTitleRow = "candidate, sentiment, location, user\n"
+columnTitleRow = "candidate, vsentiment, tsentiment, location, user, time, tweet\n"
 csv.write(columnTitleRow)
 
 plt.style.use('seaborn')
 plt.ion()
-fig = plt.figure()
-ax = plt.axes(xlim=(0, seconds), ylim=(-Y_range, Y_range))
-line1, = ax.plot([], [], lw=2)
-line2, = ax.plot([], [], lw=2)
+ax = plt.axes(xlim=(0, minutes), ylim=(-Y_range, Y_range))
+line1 = ax.plot([], [], 'k-', lw=2)[0]
+line2 = ax.plot([], [], lw=2)[0]
 
 plt.ylabel('Sentiment')
-plt.xlabel('Seconds')
+plt.xlabel('Minutes')
 plt.title('Tracking: ' + str(candidate1))
 
 
@@ -59,9 +58,9 @@ def graph_tweets():
         if time.time() - startTime + error >= interval:
             error += time.time() - startTime - interval
             startTime = time.time()
-            Y1.append(statistics.mean(average[-average1:]))
+            Y1.append(statistics.mean(sentiments[-average1:]))
             del Y1[0]
-            Y2.append(statistics.mean(average[-average2:]))
+            Y2.append(statistics.mean(sentiments[-average2:]))
             del Y2[0]
 
             line1.set_data(X, Y1)
@@ -79,29 +78,47 @@ def log_tweet(dict_data):
     tweet = get_tweet(dict_data)
 
     vSentiment = analyzer.polarity_scores(tweet)["compound"]
+    tSentiment = TextBlob(tweet).sentiment.polarity
 
-    if vSentiment > 0.05:
-        average.append(1)
+    if vSentiment > 0:
+        sentiments.append(1)
         positive += 1
         count += 1
-    elif vSentiment < -0.05:
-        average.append(-1)
+    elif vSentiment < 0:
+        sentiments.append(-1)
         negative += 1
         count += 1
     else:
-        average.append(0)
+        sentiments.append(0)
         neutral += 1
         count += 1
-    del average[0]
+    del sentiments[0]
 
-    # print('***************************************')
-    # print(str(tweet))
-    # print('Vader: ' + str(vSentiment))
+    if tSentiment > 0:
+        sentiments.append(1)
+        positive += 1
+        count += 1
+    elif tSentiment < 0:
+        sentiments.append(-1)
+        negative += 1
+        count += 1
+    else:
+        sentiments.append(0)
+        neutral += 1
+        count += 1
+    if len(sentiments) > average2:
+        del sentiments[0]
+
+    print('***************************************')
+    print(str(tweet))
+    print('Vader: ' + str(vSentiment))
+    print('Textblob: ' + str(tSentiment))
 
     print(negative, '|', neutral, '|', positive)
 
-    if location is not None:
-        row = str(candidate1) + ', ' + str(vSentiment) + ', ' + str(location) + ', ' + str(user) + ', ' + str(datetime.datetime.now().time()) + '\n'
+    if True:
+        row = str(candidate1) + ', ' + str(vSentiment) + ', ' + str(tSentiment) + ', ' + str(location) + ', ' + \
+              str(user) + ', ' + str(datetime.datetime.now().time()) + ', ' + tweet + '\n'
         csv.write(row)
 
 
